@@ -1,9 +1,23 @@
 import express from "express";
-import { registerUser, verifyUser } from "../controllers/user.controller";
+import {
+  LoginUser,
+  logoutUser,
+  myProfile,
+  refreshToken,
+  registerUser,
+  verifyOtp,
+  verifyUser,
+} from "../controllers/user.controller";
+import { isAuth } from "../middlewares/isAuth";
 
 const router = express.Router();
 
 router.post("/register", registerUser);
 router.post("/verify/:token", verifyUser);
+router.post("/login", LoginUser);
+router.post("/verify", verifyOtp);
+router.get("/me", isAuth, myProfile);
+router.post("/refresh", refreshToken);
+router.post("/logout", isAuth, logoutUser);
 
 export default router;

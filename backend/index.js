@@ -2,6 +2,7 @@ import express from "express";
 import connectDB from "./config/db.js";
 import userRoutes from "./routes/user.route.js";
 import { createClient } from "redis";
+import cookieParser from "cookie-parser";
 
 import dotenv from "dotenv";
 dotenv.config();
@@ -28,7 +29,7 @@ redisClient
 
 //middleware
 app.use(express.json());
-
+app.use(cookieParser());
 // routes
 app.use("/api/v1", userRoutes);
 app.listen(PORT, () => {

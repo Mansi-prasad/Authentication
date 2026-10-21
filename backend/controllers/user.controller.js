@@ -6,8 +6,14 @@ import User from "../models/User";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import sendMail from "../config/sendMail";
-import { error } from "console";
+import {
+  generateAccessToken,
+  generateToken,
+  revokeRefreshToken,
+  verifyRefreshToken,
+} from "../config/generateToken.js";
 
+// register user
 export const registerUser = TryCatch(async (req, res) => {
   const sanitizedBody = sanitize(req.body);
   const validation = registerSchema.safeParse(sanitizedBody);
@@ -78,6 +84,7 @@ export const registerUser = TryCatch(async (req, res) => {
   });
 });
 
+// verify user
 export const verifyUser = TryCatch(async (req, res) => {
   const { token } = req.params;
 
@@ -172,5 +179,98 @@ export const LoginUser = TryCatch(async (req, res) => {
     });
   }
 
-  const opt = Math.floor(100000 + Math.random() * 900000).toString();
+  const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6 digit random otp.
+  const otpKey = `otp:${email}`;
+
+  await redisClient.set(otpKey, JSON.stringify(otp), {
+    EX: 300,
+  });
+
+  const subject = "Otp for verification";
+  const html = getOtpHtml({ email, otp });
+  await sendMail({ email, subject, html });
+
+  await redisClient.set(rateLimitKey, "true", {
+    EX: 60,
+  });
+
+  res.json({
+    message:
+      "If your email is valid, an otp has been sent. it will be valid for 5 min",
+  });
+});
+
+// verify otp
+export const verifyOtp = TryCatch(async (req, res) => {
+  const { email, otp } = req.body;
+
+  if (!email || !otp) {
+    return res.status(400).json({ message: "Please provide all details" });
+  }
+
+  const otpKey = `otp:${email}`;
+  const storedOtpString = await redisClient.get(otpKey);
+
+  if (!storedOtpString) {
+    return res.status(400).json({ message: "otp expired" });
+  }
+
+  const storedOtp = JSON.parse(storedOtpString);
+
+  if (storedOtp !== otp) {
+    return res.status(400).json({ message: "invalid Otp" });
+  }
+
+  await redisClient.del(otpKey);
+
+  let user = await User.findOne({ email });
+
+  const tokenData = await generateToken(user._id, res);
+
+  res.status(200).json({ message: `Welcome ${user.name}`, user });
+});
+
+// get profile
+export const myProfile = TryCatch(async (req, res) => {
+  const user = req.user;
+  res.json(user);
+});
+
+// refresh token
+export const refreshToken = TryCatch(async (req, res) => {
+  const refreshToken = req.cookies.refreshToken;
+
+  if (!refreshToken) {
+    return res.status(401).json({
+      message: "Invalid refresh token",
+    });
+  }
+
+  const decode = await verifyRefreshToken(refreshToken);
+
+  if (!decode) {
+    return res.status(401).json({
+      message: "Invalid refresh token",
+    });
+  }
+
+  generateAccessToken(decode.id, res);
+
+  res.status(200).json({
+    message: "token refreshed",
+  });
+});
+
+// logout user
+export const logoutUser = TryCatch(async (req, res) => {
+  const userId = req.user._id;
+
+  await revokeRefreshToken(userId);
+
+  res.clearCookie("refreshToken");
+  res.clearCookie("accessToken");
+
+  await redisClient.del(`user:${userId}`);
+
+  res.status(200).json({ message: "User Logged out successfully!" });
 });
