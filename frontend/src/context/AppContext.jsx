@@ -1,0 +1,53 @@
+import { createContext, useContext, useEffect, useState } from "react";
+import { serverUrl } from "../App";
+import api from "../apiIntercepter";
+import { toast } from "react-toastify";
+
+const AppContext = createContext(null);
+
+export const AppProvider = ({children}) => {
+  const [user, setUser] =useState(null);
+  const [loading, setLoading] =useState(false);
+  const [isAuth, setIsAuth] =useState(false);
+
+  async function fetchUser() {
+    try {
+      setLoading(true);
+      const {data} = await api.get(`/api/v1/me`);
+
+      setUser(data);
+      setIsAuth(true);
+
+    } catch (error) {
+      console.log("fetch user error: ", error);
+    } finally{
+      setLoading(false);
+    }
+  }
+
+  useEffect(()=>{
+    fetchUser();
+  },[])
+
+  async function logoutUser(navigate) {
+    try {
+      const {data} = await api.post("/api/v1/logout");
+      toast.success(data.message);
+      setIsAuth(false);
+      setUser(null)
+      navigate("/login")
+    } catch (error) {
+      console.log("logout error: ", error);
+      toast.error("Somthing went wrong");
+    }
+  }
+
+  return <AppContext.Provider value={{ setIsAuth, isAuth, user, setUser, loading, logoutUser }}>{children}</AppContext.Provider>
+}
+
+export const AppData = () =>{
+  const context = useContext(AppContext)
+
+  if(!context) throw new Error("AppData must be used within an Appprovider.")
+    return context;
+}
