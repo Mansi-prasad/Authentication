@@ -3,6 +3,7 @@ import connectDB from "./config/db.js";
 import userRoutes from "./routes/user.route.js";
 import { createClient } from "redis";
 import cookieParser from "cookie-parser";
+import cors from "cors";
 
 import dotenv from "dotenv";
 dotenv.config();
@@ -30,6 +31,14 @@ redisClient
 //middleware
 app.use(express.json());
 app.use(cookieParser());
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  }),
+);
+
 // routes
 app.use("/api/v1", userRoutes);
 app.listen(PORT, () => {

@@ -1,5 +1,9 @@
 import jwt from "jsonwebtoken";
 import { redisClient } from "../index.js";
+import {
+  generateCSRFToken,
+  revokeCSRFToken,
+} from "../middlewares/CSRFMiddleware.js";
 
 export const generateToken = async (id, res) => {
   const accessToken = jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -16,8 +20,8 @@ export const generateToken = async (id, res) => {
 
   res.cookie("accessToken", accessToken, {
     httpOnly: true,
-    // secure: true,
-    sameSite: "strict", // strict prevents csirf attack , it only access the cookie from backend url
+    secure: true,
+    sameSite: "none", // none for diff frontend, strict prevents CSRF attack , it only access the cookie from backend url
     maxAge: 1 * 60 * 1000, // valid for 1 minute
   });
 
@@ -25,10 +29,12 @@ export const generateToken = async (id, res) => {
     maxAge: 7 * 24 * 60 * 60 * 1000,
     httpOnly: true,
     sameSite: "none",
-    // secure: true,
+    secure: true,
   });
 
-  return { accessToken, refreshToken };
+  const csrfToken = await generateCSRFToken(id, res);
+
+  return { accessToken, refreshToken, csrfToken };
 };
 
 export const verifyRefreshToken = async (refreshToken) => {
@@ -61,6 +67,5 @@ export const generateAccessToken = (id, res) => {
 
 export const revokeRefreshToken = async (userId) => {
   await redisClient.del(`refresh_token:${userId}`);
+  await revokeCSRFToken();
 };
-
-
