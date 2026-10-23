@@ -1,6 +1,7 @@
 import express from "express";
 import connectDB from "./config/db.js";
 import userRoutes from "./routes/user.route.js";
+import adminRoutes from "./routes/admin.routes.js";
 import { createClient } from "redis";
 import cookieParser from "cookie-parser";
 import cors from "cors";
@@ -41,6 +42,8 @@ app.use(
 
 // routes
 app.use("/api/v1", userRoutes);
+app.use("/api/v1", adminRoutes);
+
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });

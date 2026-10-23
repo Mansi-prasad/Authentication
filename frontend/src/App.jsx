@@ -7,6 +7,7 @@ import { ToastContainer } from "react-toastify";
 import VerifyOtp from "./pages/VerifyOtp";
 import Loading from "./components/Loading";
 import { AppData } from "./context/AppContext";
+import Verify from "./pages/Verify";
 
 export const serverUrl = import.meta.env.BACKEND_URL;
 function App() {
@@ -26,6 +27,10 @@ function App() {
             <Route
               path="/verify-otp"
               element={isAuth ? <Home /> : <VerifyOtp />}
+            />
+            <Route
+              path="/token/:token"
+              element={isAuth ? <Home /> : <Verify />}
             />
           </Routes>
         </BrowserRouter>

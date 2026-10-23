@@ -1,16 +1,15 @@
 import axios from "axios";
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { serverUrl } from "../App";
 import { toast } from "react-toastify";
 
 const Register = () => {
   const [name, setName] = useState("");
+  const [role, setRole] = useState("user");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState("");
-
-  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,9 +22,10 @@ const Register = () => {
       });
 
       toast.success(data.message);
-
-      localStorage.setItem("email", email);
-      navigate("/verify-otp");
+      setName("");
+      setEmail("");
+      setPassword("");
+      
     } catch (error) {
       console.log("Register error: ", error);
       toast.error(error?.response?.data?.message);
@@ -51,8 +51,8 @@ const Register = () => {
           </label>
           <input
             type="text"
-            id="full-name"
-            name="full-name"
+            id="name"
+            name="name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Enter your name"
@@ -91,7 +91,7 @@ const Register = () => {
           {loading ? "Please wait..." : "Register"}
         </button>
         <p className="text-xs text-gray-500 mt-3">
-          Already have an account? <Link to={"/login"}>Login</Link>
+          Already have an account? <Link to={"/login"} className="font-semibold text-blue-500 hover:text-blue-600">Login</Link>
         </p>
       </form>
     </section>

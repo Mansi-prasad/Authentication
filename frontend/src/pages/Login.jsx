@@ -72,7 +72,7 @@ const Login = () => {
           {loading ? "Please wait..." : "Login"}
         </button>
         <p className="text-xs text-gray-500 mt-3">
-          Don't have an account? <Link to={"/register"}>register</Link>
+          Don't have an account? <Link to={"/register"} className="text-blue-500 hover:text-blue-600 font-semibold">register</Link>
         </p>
       </form>
     </section>
