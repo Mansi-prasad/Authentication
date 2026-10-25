@@ -1,11 +1,11 @@
-import TryCatch from "../middlewares/TryCatch";
+import TryCatch from "../middlewares/TryCatch.js";
 import sanitize from "mongo-sanitize";
-import { LoginSchema, registerSchema } from "../config/zod";
+import { LoginSchema, registerSchema } from "../config/zod.js";
 import { redisClient } from "../index.js";
-import User from "../models/User";
+import User from "../models/User.js";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
-import sendMail from "../config/sendMail";
+import sendMail from "../config/sendMail.js";
 import {
   generateAccessToken,
   generateToken,
@@ -13,6 +13,7 @@ import {
   verifyRefreshToken,
 } from "../config/generateToken.js";
 import { generateCSRFToken } from "../middlewares/CSRFMiddleware.js";
+import { getVerifyEmailHtml, getOtpHtml } from "../config/html.js";
 
 // register user
 export const registerUser = TryCatch(async (req, res) => {
@@ -42,24 +43,29 @@ export const registerUser = TryCatch(async (req, res) => {
 
   const { name, email, password } = validation.data;
 
-  const rateLimitKey = `register-rate-limit: ${req.ip}:${email}`;
+  const rateLimitKey = `register-rate-limit:${req.ip}:${email}`;
 
-  if (await redisClient.get(rateLimitKey)) {
+  const isRateLimited = await redisClient.get(rateLimitKey);
+
+  if (isRateLimited) {
     return res.status(429).json({
+      success: false,
       message: "Too many requests, try again",
     });
   }
 
-  const existingUser = await User.find({ email });
+  const existingUser = await User.findOne({ email });
 
   if (existingUser) {
     return res.status(400).json({
+      success: false,
       message: "User already exists",
     });
   }
 
   const hashPassword = await bcrypt.hash(password, 10);
 
+  // generate secure email verification token
   const verifyToken = crypto.randomBytes(32).toString("hex");
 
   const verifyKey = `verify:${verifyToken}`;
@@ -70,10 +76,11 @@ export const registerUser = TryCatch(async (req, res) => {
     password: hashPassword,
   });
 
+  // saving registration data temporarily
   await redisClient.set(verifyKey, dataStore, { EX: 300 });
 
   const subject = "verify your email for Account creation.";
-  const html = getVerifyEmailHtml({ email, token });
+  const html = getVerifyEmailHtml({ email, token: verifyToken });
 
   await sendMail({ email, subject, html });
 
@@ -108,7 +115,7 @@ export const verifyUser = TryCatch(async (req, res) => {
 
   const userData = JSON.parse(userDataJson);
 
-  const existingUser = await User.find({ email: userData.email });
+  const existingUser = await User.findOne({ email: userData.email });
 
   if (existingUser) {
     return res.status(400).json({
@@ -130,6 +137,8 @@ export const verifyUser = TryCatch(async (req, res) => {
 
 // login user
 export const LoginUser = TryCatch(async (req, res) => {
+  
+  //  sanitize and validate input
   const sanitizedBody = sanitize(req.body);
   const validation = LoginSchema.safeParse(sanitizedBody);
 
@@ -156,7 +165,7 @@ export const LoginUser = TryCatch(async (req, res) => {
 
   const { email, password } = validation.data;
 
-  const rateLimitKey = `login-rate-limit: ${req.ip}:${email}`;
+  const rateLimitKey = `login-rate-limit:${req.ip}:${email}`;
 
   if (await redisClient.get(rateLimitKey)) {
     return res.status(429).json({
@@ -164,14 +173,16 @@ export const LoginUser = TryCatch(async (req, res) => {
     });
   }
 
+  // find user
   const user = await User.findOne({ email });
 
-  if (!user) {
+  if (!user  || !user.password) {
     return res.status(400).json({
       message: "Invalid credentials",
     });
   }
 
+  // compare password
   const comparePassword = await bcrypt.compare(password, user.password);
 
   if (!comparePassword) {
@@ -180,9 +191,11 @@ export const LoginUser = TryCatch(async (req, res) => {
     });
   }
 
-  const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6 digit random otp.
+  // generate a secure 6 digit OTP
+  const otp = Math.floor(100000 + Math.random() * 900000).toString(); 
   const otpKey = `otp:${email}`;
 
+  // store otp for 5 minutes  
   await redisClient.set(otpKey, JSON.stringify(otp), {
     EX: 300,
   });
@@ -278,7 +291,7 @@ export const logoutUser = TryCatch(async (req, res) => {
 });
 
 // refresh csrf
-export const refreshCSRF= TryCatch(async (req, res) => {
+export const refreshCSRF = TryCatch(async (req, res) => {
   const userId = req.user._id;
 
   const newCSRFToken = await generateCSRFToken(userId, res);

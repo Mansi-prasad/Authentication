@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { redisClient } from "..";
+import { redisClient } from "../index.js";
 
 export const generateCSRFToken = async (userId, res) => {
   const csrfToken = crypto.randomBytes(32).toString("hex");

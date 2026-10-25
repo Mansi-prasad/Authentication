@@ -8,9 +8,9 @@ import {
   registerUser,
   verifyOtp,
   verifyUser,
-} from "../controllers/user.controller";
-import { isAuth } from "../middlewares/isAuth";
-import { verifyCSRFToken } from "../middlewares/CSRFMiddleware";
+} from "../controllers/user.controller.js";
+import { isAuth } from "../middlewares/isAuth.js";
+import { verifyCSRFToken } from "../middlewares/CSRFMiddleware.js";
 
 const router = express.Router();
 

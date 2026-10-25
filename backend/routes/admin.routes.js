@@ -1,9 +1,9 @@
 import express from "express";
-import { authorizedAdmin, isAuth } from "../middlewares/isAuth";
-import adminController from "../controllers/admin.controller";
+import { authorizedAdmin, isAuth } from "../middlewares/isAuth.js";
+import { adminController } from "../controllers/admin.controller.js";
 
-const adminRoutes = express.Router();
+const adminRouter = express.Router();
 
 adminRouter.get("/admin", isAuth, authorizedAdmin, adminController);
 
-export default adminRoutes;
+export default adminRouter;

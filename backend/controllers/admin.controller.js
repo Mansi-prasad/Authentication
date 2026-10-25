@@ -1,6 +1,6 @@
-import TryCatch from "../middlewares/TryCatch";
+import TryCatch from "../middlewares/TryCatch.js";
 
-export default adminController = TryCatch(async (req, res) => {
+export const adminController = TryCatch(async (req, res) => {
   res.json({
     message: "Hello admin",
   });
