@@ -137,7 +137,6 @@ export const verifyUser = TryCatch(async (req, res) => {
 
 // login user
 export const LoginUser = TryCatch(async (req, res) => {
-  
   //  sanitize and validate input
   const sanitizedBody = sanitize(req.body);
   const validation = LoginSchema.safeParse(sanitizedBody);
@@ -158,7 +157,7 @@ export const LoginUser = TryCatch(async (req, res) => {
       firstErrorMessage = allErrors[0]?.message || "Validation Error";
     }
     return res.status(400).json({
-      message: zodError,
+      message: firstErrorMessage,
       error: allErrors,
     });
   }
@@ -176,7 +175,7 @@ export const LoginUser = TryCatch(async (req, res) => {
   // find user
   const user = await User.findOne({ email });
 
-  if (!user  || !user.password) {
+  if (!user || !user.password) {
     return res.status(400).json({
       message: "Invalid credentials",
     });
@@ -192,10 +191,10 @@ export const LoginUser = TryCatch(async (req, res) => {
   }
 
   // generate a secure 6 digit OTP
-  const otp = Math.floor(100000 + Math.random() * 900000).toString(); 
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
   const otpKey = `otp:${email}`;
 
-  // store otp for 5 minutes  
+  // store otp for 5 minutes
   await redisClient.set(otpKey, JSON.stringify(otp), {
     EX: 300,
   });
@@ -232,27 +231,57 @@ export const verifyOtp = TryCatch(async (req, res) => {
   const storedOtp = JSON.parse(storedOtpString);
 
   if (storedOtp !== otp) {
-    return res.status(400).json({ message: "invalid Otp" });
+    return res.status(400).json({ message: "invalid OTP" });
   }
 
   await redisClient.del(otpKey);
 
   let user = await User.findOne({ email });
 
-  const tokenData = await generateToken(user._id, res);
+  if (!user) {
+    return res.status(404).json({
+      message: "User not found",
+    });
+  }
 
-  res.status(200).json({ message: `Welcome ${user.name}`, user });
+  const tokenData = await generateToken(user?._id, res);
+
+  res.status(200).json({
+    message: `Welcome ${user.name}`,
+    user,
+    token: tokenData,
+    sessionInfo: {
+      sessionId: tokenData.sessionId,
+      loginTime: new Date().toISOString(),
+      csrfToken: tokenData.csrfToken,
+    },
+  });
 });
 
 // get profile
 export const myProfile = TryCatch(async (req, res) => {
   const user = req.user;
-  res.json(user);
+  const sessionId = req.sessionId;
+
+  const sessionData = await redisClient.get(`session:${sessionId}`);
+
+  let sessionInfo = null;
+
+  if (sessionData) {
+    const parsedSession = JSON.parse(sessionData);
+    sessionInfo = {
+      sessionId,
+      loginTime: parsedSession.createdAt,
+      lastActivity: parsedSession.lastActivity,
+    };
+  }
+
+  res.json({ user, sessionInfo });
 });
 
 // refresh token
 export const refreshToken = TryCatch(async (req, res) => {
-  const refreshToken = req.cookies.refreshToken;
+  const refreshToken = req.cookies?.refreshToken;
 
   if (!refreshToken) {
     return res.status(401).json({
@@ -263,31 +292,99 @@ export const refreshToken = TryCatch(async (req, res) => {
   const decode = await verifyRefreshToken(refreshToken);
 
   if (!decode) {
+    res.clearCookie("refreshToken");
+    res.clearCookie("accessToken");
+    res.clearCookie("csrfToken");
+
     return res.status(401).json({
-      message: "Invalid refresh token",
+      message: "Session expired. Please login again.",
     });
   }
 
-  generateAccessToken(decode.id, res);
+  generateAccessToken(decode.id, decode.sessionId, res);
 
   res.status(200).json({
     message: "token refreshed",
   });
 });
 
+// Resend OTP
+export const resendOtp = TryCatch(async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({
+      message: "Please provide your email",
+    });
+  }
+
+  // Check whether user exists
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    return res.status(404).json({
+      message: "User not found",
+    });
+  }
+
+  // Rate limiting
+  const rateLimitKey = `resend-otp-rate-limit:${req.ip}:${email}`;
+
+  if (await redisClient.get(rateLimitKey)) {
+    return res.status(429).json({
+      message: "Please wait before requesting another OTP",
+    });
+  }
+
+  // Generate a new 6-digit OTP
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+  const otpKey = `otp:${email}`;
+
+  // Store OTP in Redis for 5 minutes
+  await redisClient.set(otpKey, JSON.stringify(otp), {
+    EX: 300,
+  });
+
+  // Send OTP through email
+  const subject = "Resend OTP for verification";
+  const html = getOtpHtml({ email, otp });
+
+  await sendMail({ email, subject, html });
+
+  // Apply 60-second rate limit
+  await redisClient.set(rateLimitKey, "true", {
+    EX: 60,
+  });
+
+  return res.status(200).json({
+    success: true,
+    message: "A new OTP has been sent to your email",
+  });
+});
+
 // logout user
 export const logoutUser = TryCatch(async (req, res) => {
-  const userId = req.user._id;
+  try {
+    const userId = req.user?._id;
+    if (userId) {
+      await revokeRefreshToken(userId);
+      await redisClient.del(`user:${userId}`);
+    }
 
-  await revokeRefreshToken(userId);
+    res.clearCookie("refreshToken");
+    res.clearCookie("accessToken");
+    res.clearCookie("csrfToken");
 
-  res.clearCookie("refreshToken");
-  res.clearCookie("accessToken");
-  res.clearCookie("csrfToken");
+    res.status(200).json({ message: "User Logged out successfully!" });
+  } catch (error) {
+    console.error("Logout error:", error);
 
-  await redisClient.del(`user:${userId}`);
-
-  res.status(200).json({ message: "User Logged out successfully!" });
+    return res.status(500).json({
+      success: false,
+      message: "Logout failed",
+    });
+  }
 });
 
 // refresh csrf

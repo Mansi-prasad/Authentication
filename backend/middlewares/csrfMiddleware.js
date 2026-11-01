@@ -1,6 +1,18 @@
 import crypto from "crypto";
 import { redisClient } from "../index.js";
 
+const cookieOptions = {
+  httpOnly: true,
+  secure: process.env.COOKIE_SECURE === "true",
+  sameSite: process.env.COOKIE_SAME_SITE || "lax",
+  path: "/",
+};
+
+export const csrfCookieOptions = {
+  ...cookieOptions,
+  httpOnly: false,
+};
+
 export const generateCSRFToken = async (userId, res) => {
   const csrfToken = crypto.randomBytes(32).toString("hex");
 
@@ -9,9 +21,7 @@ export const generateCSRFToken = async (userId, res) => {
   await redisClient.setEx(csrfKey, 3600, csrfToken);
 
   res.cookie("csrfToken", csrfToken, {
-    httpOnly: false,
-    secure: true,
-    sameSite: "none",
+    ...csrfCookieOptions,
     maxAge: 60 * 60 * 1000, // 60 min
   });
 
@@ -24,10 +34,11 @@ export const verifyCSRFToken = async (req, res, next) => {
       return next();
     }
 
-    const userId = req.user?._id;
+    const userId = req.user?._id || req.user?.id;
 
     if (!userId) {
       return res.status(401).json({
+        success: false,
         message: "User not Authenticated",
       });
     }
@@ -39,6 +50,7 @@ export const verifyCSRFToken = async (req, res, next) => {
 
     if (!clientToken) {
       return res.status(403).json({
+        success: false,
         message: "CSRF Token missing. Please refresh the page.",
         code: "CSRF_TOKEN_MISSING",
       });
@@ -50,6 +62,7 @@ export const verifyCSRFToken = async (req, res, next) => {
 
     if (!storedToken) {
       return res.status(403).json({
+        success: false,
         message: "CSRF Token Expired. Please try again.",
         code: "CSRF_TOKEN_EXPIRED",
       });
@@ -57,6 +70,7 @@ export const verifyCSRFToken = async (req, res, next) => {
 
     if (storedToken !== clientToken) {
       return res.status(403).json({
+        success: false,
         message: "Invalid CSRF Token. Please refresh the page.",
         code: "CSRF_TOKEN_INVALID",
       });
@@ -65,6 +79,7 @@ export const verifyCSRFToken = async (req, res, next) => {
   } catch (error) {
     console.log("CSRF verification error: ", error);
     return res.status(500).json({
+      success: false,
       message: "CSRF varification failed.",
       code: "CSRF_VERIFICATION_ERROR",
     });

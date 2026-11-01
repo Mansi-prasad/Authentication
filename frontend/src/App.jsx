@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register"
+import Dashboard from "./pages/Dashboard";
 import { ToastContainer } from "react-toastify";
 import VerifyOtp from "./pages/VerifyOtp";
 import Loading from "./components/Loading";
@@ -33,6 +34,9 @@ function App() {
               path="/token/:token"
               element={isAuth ? <Home /> : <Verify />}
             />
+            <Route
+              path="/dashboard"
+              element={isAuth ? <Dashboard /> : <Login />} />
           </Routes>
         </BrowserRouter>
       )}

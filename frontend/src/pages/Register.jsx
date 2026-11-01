@@ -6,7 +6,6 @@ import { toast } from "react-toastify";
 
 const Register = () => {
   const [name, setName] = useState("");
-  const [role, setRole] = useState("user");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState("");

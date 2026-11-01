@@ -10,7 +10,7 @@ const VerifyOtp = () => {
   const [loading, setLoading] = useState("");
   const [resending, setResending] = useState(false);
   const navigate = useNavigate();
-  const { fetchUser } = AppData();
+  const { setIsAuth, setUser } = AppData();
 
   // verify otp
   const submitHandler = async (e) => {
@@ -26,14 +26,10 @@ const VerifyOtp = () => {
       );
 
       toast.success(data.message);
+      setIsAuth(true);
+      setUser(data.user);
       localStorage.clear("email");
-
-      // Fetch authenticated user from backend
-      const authenticated = await fetchUser();
-
-      if (authenticated) {
-        navigate("/");
-      }
+      navigate("/");
     } catch (error) {
       console.log("otp verification error: ", error);
       toast.error(error?.response?.data?.message);
@@ -53,13 +49,11 @@ const VerifyOtp = () => {
 
     try {
       setResending(true);
-      console.log("Route: ", `${serverUrl}/api/v1/send-otp`);
       const { data } = await axios.post(
         `${serverUrl}/api/v1/send-otp`,
         { email },
         { withCredentials: true },
       );
-      console.log("data: ", data);
       toast.success(data.message);
     } catch (error) {
       console.log("Error: ", error);

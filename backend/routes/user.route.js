@@ -6,6 +6,7 @@ import {
   refreshCSRF,
   refreshToken,
   registerUser,
+  resendOtp,
   verifyOtp,
   verifyUser,
 } from "../controllers/user.controller.js";
@@ -18,6 +19,7 @@ router.post("/register", registerUser);
 router.post("/verify/:token", verifyUser);
 router.post("/login", LoginUser);
 router.post("/verify", verifyOtp);
+router.post("/send-otp", resendOtp);
 router.get("/me", isAuth, myProfile);
 router.post("/refresh", refreshToken);
 router.post("/logout", isAuth, verifyCSRFToken, logoutUser);

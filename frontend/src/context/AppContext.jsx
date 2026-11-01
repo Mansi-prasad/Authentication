@@ -15,24 +15,17 @@ export const AppProvider = ({ children }) => {
       setLoading(true);
       const { data } = await api.get(`/api/v1/me`);
 
-      setUser(data);
+      setUser(data.user);
       setIsAuth(true);
-
-      return true;
     } catch (error) {
       console.log("fetch user error: ", error);
 
       setUser(null);
       setIsAuth(false);
-      return false;
     } finally {
       setLoading(false);
     }
   }
-
-  useEffect(() => {
-    fetchUser();
-  }, []);
 
   async function logoutUser(navigate) {
     try {
@@ -46,6 +39,10 @@ export const AppProvider = ({ children }) => {
       toast.error("Somthing went wrong");
     }
   }
+
+  useEffect(() => {
+    fetchUser();
+  }, []);
 
   return (
     <AppContext.Provider

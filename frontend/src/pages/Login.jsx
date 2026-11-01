@@ -15,14 +15,11 @@ const Login = () => {
     e.preventDefault();
     try {
       setLoading(true);
-      console.log("login starts....");
-      console.log("login url hits: ", `${serverUrl}/api/v1/login`);
       const { data } = await axios.post(`${serverUrl}/api/v1/login`, {
         email,
         password,
       });
 
-      console.log("login data: ", data);
       toast.success(data.message);
       localStorage.setItem("email", email);
       
