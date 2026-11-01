@@ -9,7 +9,8 @@ import Loading from "./components/Loading";
 import { AppData } from "./context/AppContext";
 import Verify from "./pages/Verify";
 
-export const serverUrl = import.meta.env.BACKEND_URL;
+export const serverUrl = import.meta.env.VITE_BACKEND_URL;
+
 function App() {
   const { isAuth, loading } = AppData();
 

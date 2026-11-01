@@ -1,49 +1,65 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AppData } from "../context/AppContext";
+import { IoShieldCheckmark } from "react-icons/io5";
+import { MdLogout } from "react-icons/md";
 
 const Header = () => {
   const { logoutUser } = AppData();
   const navigate = useNavigate();
   return (
-    <header class="text-gray-600 body-font">
-      <div class="container mx-auto flex flex-wrap p-5 flex-col md:flex-row items-center">
-        <Link class="flex title-font font-medium items-center text-gray-900 mb-4 md:mb-0">
-          <span class="ml-3 text-xl">Auth</span>
-        </Link>
-        <nav class="md:ml-auto md:mr-auto flex flex-wrap items-center text-base justify-center">
-          <Link to="/" class="mr-5 hover:text-gray-900">
-            First Link
+    <header className="w-full p-2 bg-gradient-to-br from-[#0D9488] via-[#0F766E] to-[#042F2E] flex flex-wrap items-center justify-between gap-5 shadow-xl">
+          {/* Logo */}
+          <Link to="/" className="flex items-center gap-3 text-white group">
+            <div className="text-[#2DD4BF] group-hover:scale-110 transition-transform duration-300">
+              <IoShieldCheckmark size={42} strokeWidth={2.2} />
+            </div>
+
+            <span className="text-2xl md:text-3xl font-bold tracking-wide">
+              Auth
+            </span>
           </Link>
-          <Link to="/" class="mr-5 hover:text-gray-900">
-            Second Link
-          </Link>
-          <Link to="/" class="mr-5 hover:text-gray-900">
-            Third Link
-          </Link>
-          <Link to="/" class="mr-5 hover:text-gray-900">
-            Fourth Link
-          </Link>
-        </nav>
-        <button
-          onClick={() => logoutUser(navigate)}
-          class="text-white inline-flex items-center bg-red-500 border-0 py-1 px-3 focus:outline-none hover:bg-red-600 rounded text-base mt-4 md:mt-0"
-        >
-          Logout
-          <svg
-            fill="none"
-            stroke="currentColor"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            class="w-4 h-4 ml-1"
-            viewBox="0 0 24 24"
+
+          {/* Navigation */}
+          <nav className="flex flex-wrap items-center justify-center gap-5 md:gap-10 text-sm md:text-base font-medium">
+            <Link
+              to="/"
+              className="text-[#2DD4BF] border-b-2 border-[#2DD4BF] pb-2 hover:text-white transition-colors"
+            >
+              Home
+            </Link>
+
+            <Link
+              to="/"
+              className="text-gray-200 hover:text-[#2DD4BF] transition-colors"
+            >
+              About
+            </Link>
+
+            <Link
+              to="/"
+              className="text-gray-200 hover:text-[#2DD4BF] transition-colors"
+            >
+              Features
+            </Link>
+
+            <Link
+              to="/"
+              className="text-gray-200 hover:text-[#2DD4BF] transition-colors"
+            >
+              Contact
+            </Link>
+          </nav>
+
+          {/* Logout */}
+          <button
+            onClick={() => logoutUser(navigate)}
+            className="flex items-center gap-3 bg-[#0D9488] hover:bg-[#0F766E] text-white font-semibold px-6 py-3 rounded-full border border-[#2DD4BF]/40 shadow-lg shadow-[#0D9488]/20 transition-all duration-300 hover:scale-105"
           >
-            <path d="M5 12h14M12 5l7 7-7 7"></path>
-          </svg>
-        </button>
-      </div>
-    </header>
+            Logout
+            <MdLogout size={21} />
+          </button>
+     </header>
   );
 };
 

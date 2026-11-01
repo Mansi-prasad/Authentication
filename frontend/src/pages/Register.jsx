@@ -25,7 +25,6 @@ const Register = () => {
       setName("");
       setEmail("");
       setPassword("");
-      
     } catch (error) {
       console.log("Register error: ", error);
       toast.error(error?.response?.data?.message);
@@ -34,18 +33,23 @@ const Register = () => {
     }
   };
   return (
-    <section className=" flex items-center justify-center text-gray-600 body-font">
+    <section className="min-h-screen flex items-center justify-center px-4 py-10 text-white body-font bg-gradient-to-br from-[#0D9488] via-[#0F766E] to-[#042F2E]">
       <form
         onSubmit={handleSubmit}
-        className="lg:w-2/6 md:w-1/2 bg-gray-100 rounded-lg p-8 w-full mt-10"
+        className="lg:w-2/6 md:w-1/2 w-full bg-[#090F0F] text-white rounded-2xl p-8 mt-10 border border-white/10 shadow-2xl shadow-black/30"
       >
-        <h2 className="text-gray-900 text-center text-lg font-medium title-font mb-5">
-          Sign Up
+        <h2 className="text-2xl text-center font-semibold mb-2 text-white">
+          Create Account
         </h2>
-        <div className="relative mb-4">
+
+        <p className="text-center text-sm text-gray-400 mb-7">
+          Create your account and start your journey
+        </p>
+
+        <div className="relative mb-5">
           <label
             htmlFor="full-name"
-            className="leading-7 text-sm text-gray-600"
+            className="leading-7 text-sm text-gray-300"
           >
             Full Name
           </label>
@@ -56,12 +60,12 @@ const Register = () => {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Enter your name"
-            className="w-full bg-white rounded border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out"
+            className="w-full bg-[#172323] border border-[#29413F] rounded-lg focus:border-[#0D9488] focus:ring-2 focus:ring-[#0D9488]/30 text-white placeholder-gray-500 text-base outline-none py-2 px-4 leading-8 transition-all duration-200"
           />
         </div>
-        <div className="relative mb-4">
-          <label htmlFor="email" className="leading-7 text-sm text-gray-600">
-            Email
+        <div className="relative mb-5">
+          <label htmlFor="email" className="leading-7 text-sm text-gray-300">
+            Email Address
           </label>
           <input
             type="email"
@@ -70,11 +74,11 @@ const Register = () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="email@example.com"
-            className="w-full bg-white rounded border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out"
+            className="w-full bg-[#172323] border border-[#29413F] rounded-lg focus:border-[#0D9488] focus:ring-2 focus:ring-[#0D9488]/30 text-white placeholder-gray-500 text-base outline-none py-2 px-4 leading-8 transition-all duration-200"
           />
         </div>
-        <div className="relative mb-4">
-          <label htmlFor="password" className="leading-7 text-sm text-gray-600">
+        <div className="relative mb-6">
+          <label htmlFor="password" className="leading-7 text-sm text-gray-300">
             Password
           </label>
           <input
@@ -84,14 +88,23 @@ const Register = () => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Enter your password"
-            className="w-full bg-white rounded border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out"
+            className="w-full bg-[#172323] border border-[#29413F] rounded-lg focus:border-[#0D9488] focus:ring-2 focus:ring-[#0D9488]/30 text-white placeholder-gray-500 text-base outline-none py-2 px-4 leading-8 transition-all duration-200"
           />
         </div>
-        <button className="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg">
-          {loading ? "Please wait..." : "Register"}
+        <button
+          disabled={loading}
+          className="w-full text-white bg-[#0D9488] border-0 py-3 px-8 focus:outline-none hover:bg-[#0F766E] rounded-lg text-base font-semibold transition-all duration-300 shadow-lg shadow-[#0D9488]/20 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {loading ? "Please wait..." : "Create Account"}
         </button>
-        <p className="text-xs text-gray-500 mt-3">
-          Already have an account? <Link to={"/login"} className="font-semibold text-blue-500 hover:text-blue-600">Login</Link>
+        <p className="text-sm text-gray-400 mt-6">
+          Already have an account?{" "}
+          <Link
+            to={"/login"}
+            className="text-[#2DD4BF] hover:text-[#5EEAD4] font-semibold transition-colors"
+          >
+            Login
+          </Link>
         </p>
       </form>
     </section>
