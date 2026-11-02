@@ -9,6 +9,8 @@ import VerifyOtp from "./pages/VerifyOtp";
 import Loading from "./components/Loading";
 import { AppData } from "./context/AppContext";
 import Verify from "./pages/Verify";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 export const serverUrl = import.meta.env.VITE_BACKEND_URL;
 
@@ -29,6 +31,14 @@ function App() {
             <Route
               path="/verify-otp"
               element={isAuth ? <Home /> : <VerifyOtp />}
+            />
+            <Route
+              path="/forgot-password"
+              element={isAuth ? <Home /> : <ForgotPassword />}
+            />
+            <Route
+              path="/reset-password/:token"
+              element={isAuth ? <Home /> : <ResetPassword />}
             />
             <Route
               path="/token/:token"

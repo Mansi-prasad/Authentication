@@ -9,6 +9,8 @@ import {
   resendOtp,
   verifyOtp,
   verifyUser,
+  forgotPassword,
+  resetPassword,
 } from "../controllers/user.controller.js";
 import { isAuth } from "../middlewares/isAuth.js";
 import { verifyCSRFToken } from "../middlewares/CSRFMiddleware.js";
@@ -24,5 +26,7 @@ router.get("/me", isAuth, myProfile);
 router.post("/refresh", refreshToken);
 router.post("/logout", isAuth, verifyCSRFToken, logoutUser);
 router.post("/refresh-csrf", isAuth, refreshCSRF);
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password/:token", resetPassword);
 
 export default router;

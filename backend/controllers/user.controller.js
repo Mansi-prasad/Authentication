@@ -14,6 +14,7 @@ import {
 } from "../config/generateToken.js";
 import { generateCSRFToken } from "../middlewares/CSRFMiddleware.js";
 import { getVerifyEmailHtml, getOtpHtml } from "../config/html.js";
+import { sendResetPasswordMail } from "../config/sendMail.js";
 
 // register user
 export const registerUser = TryCatch(async (req, res) => {
@@ -396,5 +397,169 @@ export const refreshCSRF = TryCatch(async (req, res) => {
   res.json({
     message: "CSRF token refreshed.",
     csrfToken: newCSRFToken,
+  });
+});
+
+// Forgot Password
+export const forgotPassword = TryCatch(async (req, res) => {
+
+  // Sanitize and validate email
+  const sanitizedBody = sanitize(req.body);
+  const email = sanitizedBody.email?.trim().toLowerCase();
+
+  if (!email) {
+    return res.status(400).json({
+      success: false,
+      message: "Please provide your email address",
+    });
+  }
+
+  // Rate limiting
+  const rateLimitKey = `forgot-password-rate-limit:${req.ip}:${email}`;
+
+  if (await redisClient.get(rateLimitKey)) {
+    return res.status(429).json({
+      success: false,
+      message: "Please wait before requesting another reset link",
+    });
+  }
+
+  // Find user
+  const user = await User.findOne({ email });
+
+  const successMessage =
+    "If your email is registered, a password reset link has been sent. It will expire in 5 minutes.";
+
+  if (!user || !user.password) {
+    await redisClient.set(rateLimitKey, "true", { EX: 60 });
+
+    return res.status(200).json({
+      success: true,
+      message: successMessage,
+    });
+  }
+
+  // Generate secure reset token
+  const resetToken = crypto.randomBytes(32).toString("hex");
+
+  // Hash token before storing in Redis
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+
+  const resetKey = `forgot-password:${hashedToken}`;
+
+  // Store token in Redis for 5 minutes
+  await redisClient.set(
+    resetKey,
+    JSON.stringify({
+      userId: user._id.toString(),
+    }),
+    { EX: 300 },
+  );
+
+  // Send password reset email
+  try {
+    await sendResetPasswordMail({
+      email,
+      token: resetToken,
+    });
+
+    // Apply rate limit after successful email
+    await redisClient.set(rateLimitKey, "true", { EX: 60 });
+  } catch (error) {
+    // Delete token if email sending fails
+    await redisClient.del(resetKey);
+    throw error;
+  }
+
+  return res.status(200).json({
+    success: true,
+    message: successMessage,
+  });
+});
+
+// Reset Password
+export const resetPassword = TryCatch(async (req, res) => {
+  // Get token and password
+  const { token } = req.params;
+  const sanitizedBody = sanitize(req.body);
+
+  const password = sanitizedBody.password;
+  const confirmPassword = sanitizedBody.confirmPassword;
+
+  // Validate input
+  if (!token || !/^[a-f0-9]{64}$/i.test(token)) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid or expired reset link.",
+    });
+  }
+
+  if (!password || !confirmPassword) {
+    return res.status(400).json({
+      success: false,
+      message: "Please provide both passwords.",
+    });
+  }
+
+  if (password.length < 8) {
+    return res.status(400).json({
+      success: false,
+      message: "Password must be at least 8 characters long.",
+    });
+  }
+
+  if (password !== confirmPassword) {
+    return res.status(400).json({
+      success: false,
+      message: "Passwords do not match.",
+    });
+  }
+
+  // Hash the received token
+  const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+  const resetKey = `forgot-password:${hashedToken}`;
+
+  // Find token in Redis
+  const storedData = await redisClient.get(resetKey);
+
+  if (!storedData) {
+    return res.status(400).json({
+      success: false,
+      message: "Reset link is invalid or expired. Please request a new one.",
+    });
+  }
+
+  // Get user ID from Redis
+  const { userId } = JSON.parse(storedData);
+
+  const user = await User.findById(userId);
+
+  if (!user || !user.password) {
+    await redisClient.del(resetKey);
+
+    return res.status(400).json({
+      success: false,
+      message: "Unable to reset password. Please try again.",
+    });
+  }
+
+  // Hash new password
+  const hashedPassword = await bcrypt.hash(password, 12);
+
+  // Update user password
+  user.password = hashedPassword;
+  await user.save();
+
+  // Delete used reset token
+  await redisClient.del(resetKey);
+
+  return res.status(200).json({
+    success: true,
+    message:
+      "Password reset successfully. Please login with your new password.",
   });
 });

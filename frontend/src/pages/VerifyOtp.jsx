@@ -4,13 +4,20 @@ import { Link, useNavigate } from "react-router-dom";
 import { serverUrl } from "../App";
 import { toast } from "react-toastify";
 import { AppData } from "../context/AppContext";
+import ReCAPTCHA from "react-google-recaptcha";
 
 const VerifyOtp = () => {
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState("");
   const [resending, setResending] = useState(false);
+  const [show, setShow] = useState(false);
   const navigate = useNavigate();
   const { setIsAuth, setUser } = AppData();
+
+  function onChange(value) {
+    console.log("Captcha value:", value);
+    setShow(true);
+  }
 
   // verify otp
   const submitHandler = async (e) => {
@@ -90,12 +97,18 @@ const VerifyOtp = () => {
               className="w-full bg-[#172323] border border-[#29413F] rounded-lg focus:border-[#0D9488] focus:ring-2 focus:ring-[#0D9488]/30 text-white placeholder-gray-500 text-base outline-none py-2 px-4 leading-8 transition-all duration-200"
             />
           </div>
-          <button
-            disabled={loading}
-            className="w-full text-white bg-[#0D9488] border-0 py-3 px-8 focus:outline-none hover:bg-[#0F766E] rounded-lg text-base font-semibold transition-all duration-300 shadow-lg shadow-[#0D9488]/20 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? "Please wait..." : "Verify OTP"}
-          </button>
+          <ReCAPTCHA
+            sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
+            onChange={onChange}
+          />
+          {show && (
+            <button
+              disabled={loading}
+              className="w-full text-white bg-[#0D9488] border-0 py-3 px-8 focus:outline-none hover:bg-[#0F766E] rounded-lg text-base font-semibold transition-all duration-300 shadow-lg shadow-[#0D9488]/20 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? "Please wait..." : "Verify OTP"}
+            </button>
+          )}
           <p className="text-sm text-gray-400 mt-6 text-center">
             Didn't receive the OTP?{" "}
             <button
@@ -107,9 +120,8 @@ const VerifyOtp = () => {
               {resending ? "Sending..." : "Resend OTP"}
             </button>
           </p>
-          {/* make it functional */}
           <p className="text-sm text-gray-400 mt-4 text-center">
-            Go to login page?{" "}
+            Go to login page?
             <Link
               to={"/login"}
               className="text-[#2DD4BF] hover:text-[#5EEAD4] font-semibold transition-colors"

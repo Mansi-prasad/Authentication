@@ -354,3 +354,113 @@ If this wasn’t you, you can safely ignore this email.
 </html>`;
   return html;
 };
+
+export const forgotPasswordHtml = ({ email, token }) => {
+  const appName = process.env.APP_NAME || "Authentication App";
+
+  const baseUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+
+  const resetUrl = `${baseUrl.replace(/\/+$/, "")}/reset-password/${encodeURIComponent(token)}`;
+
+  const html = `
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reset Your Password</title>
+
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f3f3f3;
+        margin: 0;
+        padding: 20px;
+      }
+
+      .container {
+        background-color: #ffffff;
+        padding: 30px;
+        margin: 20px auto;
+        border-radius: 8px;
+        max-width: 500px;
+        text-align: center;
+      }
+
+      h1 {
+        color: #5a2d82;
+      }
+
+      p {
+        color: #666666;
+        line-height: 1.6;
+      }
+
+      .button {
+        display: inline-block;
+        padding: 14px 25px;
+        margin: 20px 0;
+        background-color: #5a2d82;
+        color: #ffffff !important;
+        text-decoration: none;
+        border-radius: 5px;
+        font-size: 16px;
+      }
+
+      .link {
+        word-break: break-all;
+        color: #5a2d82;
+      }
+
+      .footer {
+        margin-top: 25px;
+        color: #999999;
+        font-size: 13px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+
+      <h1>Reset Your Password</h1>
+
+      <p>Hello ${email},</p>
+
+      <p>
+        We received a request to reset your password.
+        Click the button below to create a new password.
+      </p>
+
+      <a href="${resetUrl}" class="button">
+        Reset Password
+      </a>
+
+      <p>
+        This password reset link will expire in
+        <strong>5 minutes</strong>.
+      </p>
+
+      <p>
+        If the button doesn't work, copy and paste this link
+        into your browser:
+      </p>
+
+      <a href="${resetUrl}" class="link">${resetUrl}</a>
+
+      <p>
+        If you did not request a password reset,
+        you can safely ignore this email.
+      </p>
+
+      <div class="footer">
+        <p>Thank you,<br>${appName} Team</p>
+      </div>
+
+    </div>
+  </body>
+  </html>
+  `;
+
+  return html;
+};
